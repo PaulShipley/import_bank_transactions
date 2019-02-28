@@ -1,0 +1,11 @@
+Package: import_bank_transactions
+Description: Import Bank CSV transaction files
+Name: Import Bank Transactions
+Filename: rep107
+Author: Paul Shipley <paul@paulshipley.id.au>
+Maintenance: Paul Shipley <paul@paulshipley.id.au>
+Homepage: paulshipley.id.au
+Type: extension
+InstallPath: modules/import_bank_transactions
+Version: 2.4.6-0
+
