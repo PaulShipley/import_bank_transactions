@@ -6,7 +6,7 @@
 // Free software under GNU GPL
 ***********************************************************************/
 
-class import_bank_transaction_app extends application
+class import_bank_transactions_app extends application
 {
 
 	function __construct()

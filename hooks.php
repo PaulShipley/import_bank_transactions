@@ -16,7 +16,7 @@ class hooks_import_bank_transactions extends hooks {
 		Install additional menu options provided by module
 	*/
     function install_tabs($app) {
-        $app->add_application(new import_bank_transaction_app);
+        $app->add_application(new import_bank_transactions_app);
 	}
 
 	function install_options($app) {
