@@ -10,9 +10,34 @@ class import_bank_transaction
 {
     private    $table = "IMPORT_BANK_TRANSACTIONS";
 
+    public $account_code;
+    public $filename;
+    public $file_sep;
+    public $date_format;
+    public $date_sep;
+    public $trial;
+
     function __construct()
     {
 
+    }
+
+    function load_transactions($account_code, $filename, $file_sep, $date_format, $date_sep, $trial)
+    {
+        $this->account_code = $account_code;
+        $this->filename = $filename;
+        $this->file_sep = $file_sep;
+        $this->date_format = $date_format;
+        $this->date_sep = $date_sep;
+        $this->trial = $trial;
+
+        $num_trans = 0;
+
+        $this->init();
+        $this->create_table();
+        $num_trans = $this->load_file($this->account_code, $this->filename, $this->file_sep, $this->date_format, $this->date_sep, $this->trial);
+
+        return $num_trans;
     }
 
     function init()
@@ -24,7 +49,7 @@ class import_bank_transaction
     {
         $this->drop_table();
 
-        $sql = "CREATE TABLE ".TB_PREF.$this->table." (account_code varchar(15), transdate DATE, transamount DOUBLE, transmemo TINYTEXT)";
+        $sql = "CREATE TABLE ".TB_PREF.$this->table." (id int NOT NULL AUTO_INCREMENT, account_code varchar(15), transdate DATE, transamount DOUBLE, transmemo TINYTEXT, PRIMARY KEY(id))";
 
         db_query($sql, "Can't create temporary table");
     }
@@ -38,25 +63,107 @@ class import_bank_transaction
 
     function add_transaction($bank_account_gl_code, $transdate, $transamount, $transmemo)
     {
-    	$acct = db_escape($bank_account_gl_code);
-    	$date = db_escape($transdate);
-    	$memo = db_escape($transmemo);
-    	
-        $sql = "INSERT INTO ".TB_PREF.$this->table." (account_code, transdate , transamount, transmemo) VALUES ($acct, $date, $transamount, $memo)";
+        $acct = db_escape($bank_account_gl_code);
+        $date = db_escape($transdate);
+        $memo = db_escape($transmemo);
+
+        $sql  = "INSERT INTO ".TB_PREF.$this->table." (account_code, transdate , transamount, transmemo) VALUES ($acct, $date, $transamount, $memo)";
 
         db_query($sql, "Can't create transaction row");
     }
 
-	// modified version from includes/date_functions.inc
-    function date2sql($date_,$how,$sep)
+    function load_file($bank_account_gl_code, $filename, $sep, $date_format, $date_sep, $trial)
+    {
+        $error = false;
+        $nextdata = null;
+        $line       = 0;
+        $entryCount = 0;
+        $errCnt     = 0;
+
+        $fp         = @fopen($filename, "r");
+        if (!$fp) {
+            display_error(_("Error opening file $filename"));
+        } else {
+            begin_transaction();
+            set_time_limit(600); // php maximum execution time
+            while (($data = $nextdata) || $line++ == 0) {
+                $nextdata = fgetcsv($fp, 4096, $sep);
+                if ($data == null) continue;
+
+                list($date, $amt, $memo) = $data;
+                str_replace('"', "", $memo);
+                $date_std = $this->date2sql($date,$date_format,$date_sep);
+
+                if ($date_std == false) {
+                    display_error(_("Error: date '$date' not properly formatted (line $line in import file '{$_FILES['imp']['name']}')"));
+                    $error = true;
+                }
+
+                if (!$error) {
+                    display_notification_centered($line.",".$date_std.",".$amt.",".$memo);
+
+                    $this->add_transaction($bank_account_gl_code,$date_std,$amt,$memo);
+                    $entryCount++;
+                } else {
+                    $errCnt++;
+                    $error = false;
+                }
+
+            } // where
+
+            if (!$trial) {
+                if ($errCnt == 0) {
+                    if ($entryCount > 0) {
+                        commit_transaction();
+                        display_notification_centered(_("$entryCount transactions have been imported."));
+                    } else {
+                        cancel_transaction();
+                        display_error(_("Import file contained no transactions."));
+                    }
+                } else {
+                    cancel_transaction();
+                }
+            } else {
+                // trial load, ignore all transactions
+                cancel_transaction();
+                $entryCount = 0;
+            }
+
+        } // if (!$fp)
+        @fclose($fp);
+
+        return $entryCount;
+    }
+
+    function get_next_transaction($import_id)
+    {
+        if ($import_id != 0) {
+            $sql = "DELETE FROM ".TB_PREF.$this->table." WHERE id=$import_id";
+
+            db_query($sql, "Can't delete transaction");
+        }
+
+        $sql    = "SELECT id, account_code, transdate , transamount, transmemo FROM ".TB_PREF.$this->table." ORDER BY transdate, id LIMIT 1";
+
+        $result = db_query($sql, "Can't get transaction");
+        
+    	$row = mysqli_fetch_row($result);
+
+        return $row;
+    }
+
+
+
+    // modified version from includes / date_functions.inc
+    function date2sql($date_, $how, $date_sep)
     {
         global $SysPrefs, $tmonths;
         /* takes a date in a the format specified in $DefaultDateFormat
         and converts to a yyyy/mm/dd format */
 
-        //$how   = user_date_format();
-        //$sep   = $SysPrefs->dateseps[user_date_sep()];
-        $sep   = $SysPrefs->dateseps[$sep];
+        //$how = user_date_format();
+        //$sep = $SysPrefs->dateseps[user_date_sep()];
+        $sep   = $SysPrefs->dateseps[$date_sep];
 
         $date_ = trim($date_);
         if ($date_ == null || strlen($date_) == 0)

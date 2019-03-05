@@ -48,7 +48,26 @@ add_access_extensions();
 error_reporting(E_ALL);
 ini_set("display_errors", "on");
 
-$js            = "";
+if (isset($_GET['ImportTrans'])) {
+    $import_id = $_GET['import_id'];
+
+    $ImportBankTrans = new import_bank_transaction();
+    list($import_id, $acct, $date, $amt, $memo) = $ImportBankTrans->get_next_transaction($import_id);
+	$date = sql2date($date);
+
+    if ($amt > 0) {
+    	meta_forward("$path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php", "NewDeposit=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
+        //header("Location: $path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php?NewDeposit=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
+        //exit;
+    } else {
+    	$amt = -$amt;
+    	meta_forward("$path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php", "NewPayment=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
+        //header("Location: $path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php?NewPayment=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
+        //exit;
+    }
+}
+
+$js = "";
 if ($SysPrefs->use_popup_windows)
 $js .= get_js_open_window(800, 500);
 $help_context = "Import General Journals  / Deposits / Payments / Bank Statements / Sales Orders / Sales Invoices  <a href='spreadsheet_headers.html' target='_blank'>Help: Formats</a>";
@@ -57,9 +76,8 @@ page(_($help_context), false, false, "", $js);
 global $Refs;
 global $Ajax;
 
-$ImportBankTrans = new import_bank_transaction();
 
-$filename        = (isset($_GET['filename']) ? $_GET['filename'] : '');
+$filename = (isset($_GET['filename']) ? $_GET['filename'] : '');
 if ($filename != "") {
     initialize_controls();
     $_POST['type'] = ST_JOURNAL;
@@ -69,77 +87,30 @@ if ($filename != "") {
     $_POST['trial'] = false;
 }
 
-$curEntryId = false;
-
 if (isset($_FILES['imp']) && $_FILES['imp']['name'] != '') {
     $filename    = $_FILES['imp']['tmp_name'];
     $sep         = $_POST['sep'];
     $date_format = $_POST['date_format'];
     $date_sep    = $_POST['date_sep'];
-    if (isset($_POST['bank_account']) ? $_POST['bank_account'] : "") {
-        $bank_account = isset($_POST['bank_account']) ? $_POST['bank_account'] : "";
-        $bank_account_gl_code = get_bank_gl_account($bank_account);
-    }
-    $fp    = @fopen($filename, "r");
-    $trial = (isset($_POST['trial']) ? $_POST['trial'] : false);
-    if (!$fp) {
-        display_error(_("Error opening file $filename"));
+    $trial       = (isset($_POST['trial']) ? $_POST['trial'] : false);
+    $bank_account = isset($_POST['bank_account']) ? $_POST['bank_account'] : "";
+    //$bank_account_gl_code = get_bank_gl_account($bank_account);
+
+    $ImportBankTrans = new import_bank_transaction();
+    $num_trans       = $ImportBankTrans->load_transactions($bank_account, $filename, $sep, $date_format, $date_sep, $trial);
+
+    display_notification_centered(sprintf(_("%d bank transactions imported"), $num_trans));
+
+    if ($num_trans != 0) {
+        hyperlink_params($_SERVER['PHP_SELF'], _("Process Transactions"), "ImportTrans=yes&import_id=0");
     } else {
-        $ImportBankTrans->init();
-        $ImportBankTrans->create_table();
-        begin_transaction();
-        $error = false;
-        $nextdata = null;
-        $line       = 0;
-        $entryCount = 0;
-        $errCnt     = 0;
-        set_time_limit(600); // php maximum execution time
-        while (($data = $nextdata) || $line++ == 0) {
-            $nextdata = fgetcsv($fp, 4096, $sep);
-            if ($data == null) continue;
+        hyperlink_params($_SERVER['PHP_SELF'], _("Import another file"), "");
+    }
 
-            list($date, $amt, $memo) = $data;
-            str_replace('"', "", $memo);
-            $date_std = $ImportBankTrans->date2sql($date,$date_format,$date_sep);
-
-            if ($date_std == false) {
-                display_error(_("Error: date '$date' not properly formatted (line $line in import file '{$_FILES['imp']['name']}')"));
-                $error = true;
-            }
-
-            if (!$error) {
-                display_notification_centered($line.",".$date_std.",".$amt.",".$memo);
-
-                $ImportBankTrans->add_transaction($bank_account_gl_code,$date_std,$amt,$memo);
-                $entryCount++;
-            } else {
-                $errCnt++;
-                $error = false;
-            }
-
-        } // where
-
-        if (!$trial) {
-            if ($errCnt == 0) {
-                if ($entryCount > 0) {
-                    commit_transaction();
-                    display_notification_centered(_("$entryCount transactions have been imported."));
-                } else {
-                    cancel_transaction();
-                    display_error(_("Import file contained no transactions."));
-                }
-            } else {
-                cancel_transaction();
-            }
-        } else {
-            cancel_transaction();
-        }
-
-    } // if (!$fp)
-    @fclose($fp);
-
-    //$ImportBankTrans->drop_table();
+    display_footer_exit();
 }
+
+
 
 function initialize_controls()
 //initialize dropdown boxes
@@ -192,10 +163,6 @@ dateseps_list_row(_("Date Separator:"), "date_sep", user_date_sep());
 show_table_section_trial_or_final();
 end_table(1);
 div_end('_main_table');
-submit_center('import', "Process", true, false, 'process', ICON_OK);
+submit_center('import', "Process", true, false, '', ICON_OK);
 end_form();
 end_page();
-
-
-
-
