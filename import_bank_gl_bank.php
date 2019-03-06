@@ -9,14 +9,24 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
 ***********************************************************************/
-/**********************************************************************
-// Creator: Paul Shipley
-// date_:   2019-01-09
-// Title:   Import Bank Transactions
-// Free software under GNU GPL
-***********************************************************************/
-
-$path_to_root = "../..";
+/**
+* Import Bank Transactions module
+* 
+* This is a copy of gl/gl_bank.php modified to load transactions from the bank import
+* Functionality is identical to the orginal, except that the date, bank account, amount and memo fields
+* will be pre-populated. The payment/deposit can then be processed as usual. Once committed, the next
+* transaction will be shown. Both payments and deposits will be processed in date order, earlist first.
+* 
+* Note that the pre-populated data can be ammended, and the tranaction can even not be processed,
+* but this is unlikly to be what you want.
+* 
+* All of my changes have been marked with the comment // *** PS ***
+*
+* @author Paul Shipley <paul@paulshipley.com.au>
+* @copyright 2019 Paul Shipley
+* @license GPL
+*/
+$path_to_root = "../..";     // *** PS ***
 include_once($path_to_root . "/includes/ui/items_cart.inc");
 include_once($path_to_root . "/includes/session.inc");
 $page_security= isset($_GET['NewPayment']) ||
@@ -41,33 +51,35 @@ if (isset($_GET['NewPayment'])) {
     $_SESSION['page_title'] = _($help_context = "Bank Account Payment Entry");
     create_cart(ST_BANKPAYMENT, 0);
 
+    // *** PS ***
     if (isset($_GET['import_id'])) {
+        $_POST['import_id'] = $_GET['import_id'];
         $_POST['bank_account'] = $_GET['bank_account'];
         $_POST['date_'] = $_GET['date'];
         $_POST['amount'] = $_GET['amount'];
         $_POST['LineMemo'] = $_GET['memo'];
     }
-} else
-if (isset($_GET['NewDeposit'])) {
+    // *** PS ***
+} else if (isset($_GET['NewDeposit'])) {
     $_SESSION['page_title'] = _($help_context = "Bank Account Deposit Entry");
     create_cart(ST_BANKDEPOSIT, 0);
 
+    // *** PS ***
     if (isset($_GET['import_id'])) {
+        $_POST['import_id'] = $_GET['import_id'];
         $_POST['bank_account'] = $_GET['bank_account'];
         $_POST['date_'] = $_GET['date'];
         $_POST['amount'] = $_GET['amount'];
         $_POST['LineMemo'] = $_GET['memo'];
     }
-} else
-if (isset($_GET['ModifyPayment'])) {
+    // *** PS ***
+} else if (isset($_GET['ModifyPayment'])) {
     $_SESSION['page_title'] = _($help_context = "Modify Bank Account Entry")." #".$_GET['trans_no'];
     create_cart(ST_BANKPAYMENT, $_GET['trans_no']);
-} else
-if (isset($_GET['ModifyDeposit'])) {
+} else if (isset($_GET['ModifyDeposit'])) {
     $_SESSION['page_title'] = _($help_context = "Modify Bank Deposit Entry")." #".$_GET['trans_no'];
     create_cart(ST_BANKDEPOSIT, $_GET['trans_no']);
 }
-
 page($_SESSION['page_title'], false, false, '', $js);
 
 //-----------------------------------------------------------------------------------------------
@@ -84,8 +96,7 @@ if (list_updated('PersonDetailID')) {
 }
 
 //--------------------------------------------------------------------------------------------------
-function line_start_focus()
-{
+function line_start_focus() {
     global     $Ajax;
 
     unset($_POST['amount']);
@@ -99,7 +110,8 @@ function line_start_focus()
 
 //-----------------------------------------------------------------------------------------------
 
-if (isset($_GET['AddedID'])) {
+if (isset($_GET['AddedID']))
+{
     $trans_no   = $_GET['AddedID'];
     $trans_type = ST_BANKPAYMENT;
 
@@ -107,19 +119,22 @@ if (isset($_GET['AddedID'])) {
 
     display_note(get_gl_view_str($trans_type, $trans_no, _("&View the GL Postings for this Payment")));
 
+    // *** PS ***
     if (isset($_GET['import_id'])) {
-        hyperlink_params($_SERVER['PHP_SELF'], _("Process Transactions"), "ImportTrans=yes&import_id=".$_GET['import_id']);
+        hyperlink_params($path_to_root."/modules/import_bank_transactions/import_bank_transactions.php", _("Process Transactions"), "ImportTrans=yes&import_id=".$_GET['import_id']);
     } else {
         hyperlink_params($_SERVER['PHP_SELF'], _("Enter Another &Payment"), "NewPayment=yes");
         hyperlink_params($_SERVER['PHP_SELF'], _("Enter A &Deposit"), "NewDeposit=yes");
     }
+    // *** PS ***
 
     hyperlink_params("$path_to_root/admin/attachments.php", _("Add an Attachment"), "filterType=$trans_type&trans_no=$trans_no");
 
     display_footer_exit();
 }
 
-if (isset($_GET['UpdatedID'])) {
+if (isset($_GET['UpdatedID']))
+{
     $trans_no   = $_GET['UpdatedID'];
     $trans_type = ST_BANKPAYMENT;
 
@@ -127,17 +142,15 @@ if (isset($_GET['UpdatedID'])) {
 
     display_note(get_gl_view_str($trans_type, $trans_no, _("&View the GL Postings for this Payment")));
 
-    if (isset($_GET['import_id'])) {
-        hyperlink_params($_SERVER['PHP_SELF'], _("Process Transactions"), "ImportTrans=yes&import_id=".$_GET['import_id']);
-    } else {
-        hyperlink_params($_SERVER['PHP_SELF'], _("Enter Another &Payment"), "NewPayment=yes");
-        hyperlink_params($_SERVER['PHP_SELF'], _("Enter A &Deposit"), "NewDeposit=yes");
-    }
+	hyperlink_params($_SERVER['PHP_SELF'], _("Enter Another &Payment"), "NewPayment=yes");
+
+	hyperlink_params($_SERVER['PHP_SELF'], _("Enter A &Deposit"), "NewDeposit=yes");
 
     display_footer_exit();
 }
 
-if (isset($_GET['AddedDep'])) {
+if (isset($_GET['AddedDep']))
+{
     $trans_no   = $_GET['AddedDep'];
     $trans_type = ST_BANKDEPOSIT;
 
@@ -145,13 +158,18 @@ if (isset($_GET['AddedDep'])) {
 
     display_note(get_gl_view_str($trans_type, $trans_no, _("View the GL Postings for this Deposit")));
 
-    hyperlink_params($_SERVER['PHP_SELF'], _("Enter Another Deposit"), "NewDeposit=yes");
-
-    hyperlink_params($_SERVER['PHP_SELF'], _("Enter A Payment"), "NewPayment=yes");
-
+    // *** PS ***
+    if (isset($_GET['import_id'])) {
+        hyperlink_params($path_to_root."/modules/import_bank_transactions/import_bank_transactions.php", _("Process Transactions"), "ImportTrans=yes&import_id=".$_GET['import_id']);
+    } else {
+        hyperlink_params($_SERVER['PHP_SELF'], _("Enter Another &Payment"), "NewPayment=yes");
+        hyperlink_params($_SERVER['PHP_SELF'], _("Enter A &Deposit"), "NewDeposit=yes");
+    }
+    // *** PS ***
     display_footer_exit();
 }
-if (isset($_GET['UpdatedDep'])) {
+if (isset($_GET['UpdatedDep'])) 
+{
     $trans_no   = $_GET['UpdatedDep'];
     $trans_type = ST_BANKDEPOSIT;
 
@@ -172,7 +190,8 @@ function create_cart($type, $trans_no)
 {
     global $Refs;
 
-    if (isset($_SESSION['pay_items'])) {
+    if (isset($_SESSION['pay_items'])) 
+    {
         unset ($_SESSION['pay_items']);
     }
 
@@ -186,12 +205,14 @@ function create_cart($type, $trans_no)
         $_POST['PayType'] = $bank_trans["person_type_id"];
         $cart->reference = $bank_trans["ref"];
 
-        if ($bank_trans["person_type_id"] == PT_CUSTOMER) {
+        if ($bank_trans["person_type_id"] == PT_CUSTOMER) 
+        {
             $trans = get_customer_trans($trans_no, $type);
             $_POST['person_id'] = $trans["debtor_no"];
             $_POST['PersonDetailID'] = $trans["branch_code"];
         }
-        elseif ($bank_trans["person_type_id"] == PT_SUPPLIER) {
+        elseif ($bank_trans["person_type_id"] == PT_SUPPLIER) 
+        {
             $trans = get_supp_trans($trans_no, $type);
             $_POST['person_id'] = $trans["supplier_id"];
         }
@@ -261,7 +282,8 @@ function check_trans()
 
     $amnt_chg = - $_SESSION['pay_items']->gl_items_total() - $_SESSION['pay_items']->original_amount;
 
-    if ($limit !== null && floatcmp($limit, - $amnt_chg) < 0) {
+    if ($limit !== null && floatcmp($limit, - $amnt_chg) < 0) 
+    {
         display_error(sprintf(_("The total bank amount exceeds allowed limit (%s)."), price_format($limit - $_SESSION['pay_items']->original_amount)));
         set_focus('code_id');
         $input_error = 1;
@@ -275,16 +297,19 @@ function check_trans()
             $input_error = 1;
         }
     }
-    if (!check_reference($_POST['ref'], $_SESSION['pay_items']->trans_type, $_SESSION['pay_items']->order_id)) {
+    if (!check_reference($_POST['ref'], $_SESSION['pay_items']->trans_type, $_SESSION['pay_items']->order_id)) 
+    {
         set_focus('ref');
         $input_error = 1;
     }
-    if (!is_date($_POST['date_'])) {
+    if (!is_date($_POST['date_'])) 
+    {
         display_error(_("The entered date for the payment is invalid."));
         set_focus('date_');
         $input_error = 1;
     }
-    elseif (!is_date_in_fiscalyear($_POST['date_'])) {
+    elseif (!is_date_in_fiscalyear($_POST['date_'])) 
+    {
         display_error(_("The entered date is out of fiscal year or is closed for further data entry."));
         set_focus('date_');
         $input_error = 1;
@@ -310,7 +335,8 @@ function check_trans()
     return $input_error;
 }
 
-if (isset($_POST['Process']) && !check_trans()) {
+if (isset($_POST['Process']) && !check_trans()) 
+{
     begin_transaction();
 
     $_SESSION['pay_items'] = & $_SESSION['pay_items'];
@@ -333,12 +359,19 @@ if (isset($_POST['Process']) && !check_trans()) {
 
     commit_transaction();
 
-    if ($new)
-    meta_forward($_SERVER['PHP_SELF'], $trans_type == ST_BANKPAYMENT ?
-        "AddedID=$trans_no" : "AddedDep=$trans_no");
-    else
-    meta_forward($_SERVER['PHP_SELF'], $trans_type == ST_BANKPAYMENT ?
-        "UpdatedID=$trans_no" : "UpdatedDep=$trans_no");
+    // *** PS ***
+    if ($new) {
+        $fwd = ($trans_type == ST_BANKPAYMENT) ? "AddedID=$trans_no" : "AddedDep=$trans_no";
+    } else {
+        $fwd = ($trans_type == ST_BANKPAYMENT) ? "UpdatedID=$trans_no" : "UpdatedDep=$trans_no";
+    }
+
+    if (isset($_POST['import_id'])) {
+        $fwd = $fwd."&import_id=".$_POST['import_id'];
+    }
+
+    meta_forward($_SERVER['PHP_SELF'], $fwd);
+    // *** PS ***
 
 }
 
@@ -346,12 +379,14 @@ if (isset($_POST['Process']) && !check_trans()) {
 
 function check_item_data()
 {
-    if (!check_num('amount', 0)) {
+    if (!check_num('amount', 0)) 
+    {
         display_error( _("The amount entered is not a valid number or is less than zero."));
         set_focus('amount');
         return false;
     }
-    if (isset($_POST['_ex_rate']) && input_num('_ex_rate') <= 0) {
+    if (isset($_POST['_ex_rate']) && input_num('_ex_rate') <= 0) 
+    {
         display_error( _("The exchange rate cannot be zero or a negative number."));
         set_focus('_ex_rate');
         return false;
@@ -365,7 +400,8 @@ function check_item_data()
 function handle_update_item()
 {
     $amount = ($_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ? 1: - 1) * input_num('amount');
-    if ($_POST['UpdateItem'] != "" && check_item_data()) {
+    if ($_POST['UpdateItem'] != "" && check_item_data()) 
+    {
         $_SESSION['pay_items']->update_gl_item($_POST['Index'], $_POST['code_id'],
             $_POST['dimension_id'], $_POST['dimension2_id'], $amount , $_POST['LineMemo']);
     }
@@ -406,7 +442,8 @@ handle_update_item();
 if (isset($_POST['CancelItemChanges']) || isset($_POST['Index']))
 line_start_focus();
 
-if (isset($_POST['go'])) {
+if (isset($_POST['go'])) 
+{
     display_quick_entries($_SESSION['pay_items'], $_POST['person_id'], input_num('totamount'),
         $_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ? QE_PAYMENT : QE_DEPOSIT);
     $_POST['totamount'] = price_format(0); $Ajax->activate('totamount');
@@ -427,6 +464,7 @@ gl_options_controls($_SESSION['pay_items']);
 echo "</td>";
 end_row();
 end_table(1);
+hidden("import_id"); // *** PS ***
 
 submit_center_first('Update', _("Update"), '', null);
 submit_center_last('Process', $_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ?

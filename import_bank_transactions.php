@@ -9,38 +9,30 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
 ***********************************************************************/
-/**********************************************************************
-// Creator: Paul Shipley
-// date_:   2019-01-09
-// Title:   Import Bank Transactions
-// Free software under GNU GPL
-***********************************************************************/
-
+/**
+* Import Bank Transactions module
+*
+* This is a variation of the gl/gl_bank.php functionality modified to import bank transactions
+* Functionality is identical to the orginal, except that the date, bank account, amount and memo fields
+* will be pre-populated. The payment/deposit can then be processed as usual. Once committed, the next
+* transaction will be shown. Both payments and deposits will be processed in date order, earlist first.
+*
+* Note that the pre-populated data can be ammended, and the tranaction can even not be processed,
+* but this is unlikly to be what you want.
+*
+* @author Paul Shipley <paul@paulshipley.com.au>
+* @copyright 2019 Paul Shipley
+* @license GPL
+*/
 
 $page_security = 'SA_IMPORTBANKTRANSACTIONS';
 $path_to_root  = "../..";
 include_once ($path_to_root . "/includes/session.inc");
-include_once ($path_to_root . "/includes/sysnames.inc"); //referencetype_list_row for determining next reference for source documents
-include_once ($path_to_root . "/includes/main.inc"); //function page
+include_once ($path_to_root . "/includes/sysnames.inc");
+include_once ($path_to_root . "/includes/main.inc");
 include_once ($path_to_root . "/includes/ui.inc");
-//include_once ($path_to_root . " / includes / ui / items_cart.inc"); //class 'items_cart' gl_items for classic tabular representation of journals
-//include_once ($path_to_root . " / includes / ui / ui_input.inc");
-//include_once ($path_to_root . " / includes / db / audit_trail_db.inc"); //add_audit_trail mandatory for all import transactions
-//include_once ($path_to_root . " / gl / includes / db / gl_db_trans.inc"); // write journal entries; add_gl_tax_details; add_gl_trans
-//include_once ($path_to_root . " / gl / includes / db / gl_db_bank_trans.inc"); //add_bank_trans
-//include_once ($path_to_root . " / gl / includes / db / gl_db_bank_accounts.inc"); //get_bank_gl_account
-//include_once ($path_to_root . " / gl / includes / db / gl_db_accounts.inc"); // gl_account_in_bank_accounts
-//include_once ($path_to_root . " / gl / includes / gl_db.inc"); //link to other includes
 include_once ($path_to_root . "/includes/date_functions.inc");
-//include_once ($path_to_root . " / includes / data_checks.inc");
-//include_once ($path_to_root . " / admin / db / company_db.inc"); //default control accounts
-//include_once ($path_to_root . " / includes / ui / ui_controls.inc");
-//include_once ($path_to_root . " / modules / import_transactions / includes / import_transactions.inc"); //functions used
-//include_once ($path_to_root . " / modules / import_transactions / includes / import_sales_order_entry.inc"); // adaptation of sales_order_entry.php
-//include_once ($path_to_root . " / modules / import_transactions / includes / import_sales_cart_class.inc"); // adaptation of cart class
-//include_once ($path_to_root . " / modules / import_transactions / includes / import_sales_order_ui.inc"); // adaptation of sales_order_ui.inc
-//include_once($path_to_root . " / gl / includes / ui / gl_journal_ui.inc"); display_import_items adapted from display_ gl_items
-include_once($path_to_root . "/modules/import_bank_transactions/import_bank_transactions.inc");
+include_once ($path_to_root . "/modules/import_bank_transactions/import_bank_transactions.inc");
 
 add_access_extensions();
 
@@ -48,25 +40,37 @@ add_access_extensions();
 error_reporting(E_ALL);
 ini_set("display_errors", "on");
 
+
+// Process a new import file
+$trans_finished= FALSE;
+$ImportBankTrans = new import_bank_transaction();
+
 if (isset($_GET['ImportTrans'])) {
     $import_id = $_GET['import_id'];
 
-    $ImportBankTrans = new import_bank_transaction();
-    list($import_id, $acct, $date, $amt, $memo) = $ImportBankTrans->get_next_transaction($import_id);
-	$date = sql2date($date);
+    $ImportBankTrans->delete_transaction($import_id);
+}
 
-    if ($amt > 0) {
-    	meta_forward("$path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php", "NewDeposit=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
-        //header("Location: $path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php?NewDeposit=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
-        //exit;
+if (isset($_GET['ImportTrans']) || $ImportBankTrans->is_transactions()) {
+    list($import_id, $acct, $date, $amt, $memo) = $ImportBankTrans->get_next_transaction();
+
+    // process next transaction, fall through if none left
+    if (isset($import_id)) {
+        $date = sql2date($date);
+
+        if ($amt > 0) {
+            meta_forward("$path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php", "NewDeposit=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
+        } else {
+            $amt = - $amt;
+            meta_forward("$path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php", "NewPayment=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
+        }
     } else {
-    	$amt = -$amt;
-    	meta_forward("$path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php", "NewPayment=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
-        //header("Location: $path_to_root/modules/import_bank_transactions/import_bank_gl_bank.php?NewPayment=yes&import_id=".$import_id."&bank_account=".$acct."&date=".$date."&amount=".$amt."&memo=".urlencode($memo));
-        //exit;
+        $trans_finished = TRUE;
     }
 }
 
+
+// Setup page
 $js = "";
 if ($SysPrefs->use_popup_windows)
 $js .= get_js_open_window(800, 500);
@@ -75,7 +79,6 @@ page(_($help_context), false, false, "", $js);
 
 global $Refs;
 global $Ajax;
-
 
 $filename = (isset($_GET['filename']) ? $_GET['filename'] : '');
 if ($filename != "") {
@@ -87,6 +90,18 @@ if ($filename != "") {
     $_POST['trial'] = false;
 }
 
+
+// All transactions processed
+if ($trans_finished) {
+    display_notification_centered( _("All bank transactions processed"));
+
+    hyperlink_params($_SERVER['PHP_SELF'], _("Import another file"), "");
+
+    display_footer_exit();
+}
+
+
+// Import file processed, show next steps
 if (isset($_FILES['imp']) && $_FILES['imp']['name'] != '') {
     $filename    = $_FILES['imp']['tmp_name'];
     $sep         = $_POST['sep'];
@@ -94,7 +109,6 @@ if (isset($_FILES['imp']) && $_FILES['imp']['name'] != '') {
     $date_sep    = $_POST['date_sep'];
     $trial       = (isset($_POST['trial']) ? $_POST['trial'] : false);
     $bank_account = isset($_POST['bank_account']) ? $_POST['bank_account'] : "";
-    //$bank_account_gl_code = get_bank_gl_account($bank_account);
 
     $ImportBankTrans = new import_bank_transaction();
     $num_trans       = $ImportBankTrans->load_transactions($bank_account, $filename, $sep, $date_format, $date_sep, $trial);
@@ -103,19 +117,18 @@ if (isset($_FILES['imp']) && $_FILES['imp']['name'] != '') {
 
     if ($num_trans != 0) {
         hyperlink_params($_SERVER['PHP_SELF'], _("Process Transactions"), "ImportTrans=yes&import_id=0");
-    } else {
-        hyperlink_params($_SERVER['PHP_SELF'], _("Import another file"), "");
     }
+
+    hyperlink_params($_SERVER['PHP_SELF'], _("Import another file"), "");
 
     display_footer_exit();
 }
 
 
-
+// Show main UI
 function initialize_controls()
-//initialize dropdown boxes
 {
-    //$myrow = get_company_prefs();
+    //initialize dropdown boxes
     if (!isset($_POST['type'])) $_POST['type'] = null;
     if (!isset($_POST['sep'])) $_POST['sep'] = ",";
     if (!isset($_POST['bank_account'])) $_POST['bank_account'] = _("Current account");
@@ -151,7 +164,6 @@ function show_table_section_trial_or_final()
     label_row(_("Import File:"), "<input type='file' id='imp' name='imp'>", 'colspan=1');
 }
 
-// User Interface
 start_form(true);
 div_start('_main_table');
 initialize_controls();

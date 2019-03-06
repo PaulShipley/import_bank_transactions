@@ -1,10 +1,11 @@
 <?php
-/**********************************************************************
-// Creator: Paul Shipley
-// date_:   2019-01-09
-// Title:   Import Bank Transactions
-// Free software under GNU GPL
-***********************************************************************/
+/**
+* Import Bank Transactions module
+*
+* @author Paul Shipley <paul@paulshipley.com.au>
+* @copyright 2019 Paul Shipley
+* @license GPL
+*/
 
 define ('SS_IMPORTBANKTRANSACTIONS', 101<<8);
 
