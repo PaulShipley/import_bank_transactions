@@ -74,7 +74,7 @@ if (isset($_GET['ImportTrans']) || $ImportBankTrans->is_transactions()) {
 $js = "";
 if ($SysPrefs->use_popup_windows)
 $js .= get_js_open_window(800, 500);
-$help_context = "Import General Journals  / Deposits / Payments / Bank Statements / Sales Orders / Sales Invoices  <a href='spreadsheet_headers.html' target='_blank'>Help: Formats</a>";
+$help_context = "Import Bank Statements";
 page(_($help_context), false, false, "", $js);
 
 global $Refs;
@@ -138,7 +138,8 @@ function initialize_controls()
 
 function show_table_section_import_settings()
 {
-    table_section_title(_("Import Settings"), 2);
+//    table_section_title(_("Import Settings"), 2);
+    table_section_title(_("Bank Account"), 2);
     bank_accounts_list_cells(_("Bank Account:"), 'bank_account', $selected_id = "", $_POST['bank_account']);
     show_table_section_bank_account_number();
 }
@@ -147,13 +148,12 @@ function show_table_section_bank_account_number()
 {
     $bank    = $_POST['bank_account'];
     $account = get_bank_gl_account($bank);
-    table_section_title(_("Bank Accounts"), 2);
     label_row(_("Account number: "), $account, 'colspan=1');
 }
 
 function show_table_section_csv_separator()
 {
-    table_section_title(_("CSV fields are separated by: "), 2);
+    table_section_title(_("CSV fields - <a href='spreadsheet_headers.html' target='_blank'>Help CSV File Format</a>"), 2);
     text_cells(_("Field Separator:"), 'sep', $_POST['sep'], 2, 1, $title = "", 'colspan=1');
 }
 
