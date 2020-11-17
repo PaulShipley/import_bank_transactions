@@ -40,8 +40,7 @@ class hooks_import_bank_transactions extends hooks {
     function install_access()
     {
         $security_sections[SS_IMPORTBANKTRANSACTIONS] =    _("Import Bank Transactions");
-
-        $security_areas['SA_IMPORTBANKTRANSACTIONS'] = array(SS_IMPORTTRANSACTIONS|101, _("Import Bank Transactions"));
+		$security_areas['SA_IMPORTBANKTRANSACTIONS'] = array(SS_IMPORTBANKTRANSACTIONS|101, _("Import Bank Transactions"));
 
         return array($security_areas, $security_sections);
     }
