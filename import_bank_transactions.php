@@ -153,7 +153,7 @@ function show_table_section_bank_account_number()
 
 function show_table_section_csv_separator()
 {
-    table_section_title(_("CSV fields - <a href='spreadsheet_headers.html' target='_blank'>Help CSV File Format</a>"), 2);
+    table_section_title(_("CSV fields - <a href='csv_file_format.html' target='_blank'>Help CSV File Format</a>"), 2);
     text_cells(_("Field Separator:"), 'sep', $_POST['sep'], 2, 1, $title = "", 'colspan=1');
 }
 
