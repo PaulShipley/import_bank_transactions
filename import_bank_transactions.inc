@@ -1,6 +1,24 @@
 <?php
+/**********************************************************************
+Copyright (C) Paul Shipley
+Released under the terms of the GNU General Public License, GPL,
+as published by the Free Software Foundation, either version 3
+of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
+***********************************************************************/
 /**
 * Import Bank Transactions module
+*
+* This is a variation of the gl/gl_bank.php functionality modified to import bank transactions
+* Functionality is identical to the orginal, except that the date, bank account, amount and memo fields
+* will be pre-populated. The payment/deposit can then be processed as usual. Once committed, the next
+* transaction will be shown. Both payments and deposits will be processed in date order, earlist first.
+*
+* Note that the pre-populated data can be ammended, and the tranaction can even not be processed,
+* but this is unlikly to be what you want.
 *
 * @author Paul Shipley <paul@paulshipley.com.au>
 * @copyright 2019 Paul Shipley
@@ -216,6 +234,16 @@ class import_bank_transaction
     * date2sql
     *
     * modified version from includes/date_functions.inc
+    * 
+    * The original version has the date format ($how) and date seperator character ($date_sep)
+    * hardcoded to user preferences, which limits the functions usability in siturations
+    * where the input date format is not under the users control (eg: file import from third party)
+    * 
+    * Calling the function without the optional parameters (ie: date2sql($date_)) gives the same
+    * result as the original version
+    * 
+    * Calling the function with the additional parameters allows for greater flexability of
+    * date formats (ie: date2sql($date_,2,'-'))
     *
     * @param string  $date_    Date to be converted
     * @param integer $how      Date format (0=MMDDYYYY, 1=DDMMYYYY, 2=YYYYMMDD, 3=MmmDDYYYY, 4=DDMmYYYY, 5=YYYYMmmDD)
@@ -223,7 +251,7 @@ class import_bank_transaction
     *
     * @return string Date in SQL format (YYYY-MM-DD)
     */
-    function date2sql($date_, $how, $date_sep)
+    function date2sql($date_, $how = NULL, $date_sep = NULL)
     {
         global $SysPrefs, $tmonths;
         /* takes a date in a the format specified in $DefaultDateFormat
@@ -231,7 +259,8 @@ class import_bank_transaction
 
         //$how = user_date_format();
         //$sep = $SysPrefs->dateseps[user_date_sep()];
-        $sep   = $SysPrefs->dateseps[$date_sep];
+        $how = ($how != NULL ? $how : user_date_format()); 
+        $sep = ($date_sep != NULL ? $SysPrefs->dateseps[$date_sep] : $SysPrefs->dateseps[user_date_sep()]);
 
         $date_ = trim($date_);
         if ($date_ == null || strlen($date_) == 0)
