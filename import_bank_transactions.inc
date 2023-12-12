@@ -61,10 +61,9 @@ class import_bank_transaction
     {
         $this->create_table();
 
-        $error = false;
-        $nextdata = null;
         $line       = 0;
         $entryCount = 0;
+        $error = false;
         $errCnt     = 0;
 
         $fp         = @fopen($filename, "r");
@@ -73,9 +72,12 @@ class import_bank_transaction
         } else {
             begin_transaction();
             set_time_limit(600); // php maximum execution time
-            while (($data = $nextdata) || $line++ == 0) {
-                $nextdata = fgetcsv($fp, 4096, $file_sep);
-                if ($data == null) continue;
+            while ( ($data = fgetcsv($fp, 4096, $file_sep)) !== false ) {
+                $line++;
+                // ignore blank lines
+                if ( $data[0] === null ) {
+                    continue;
+                }
 
                 list($date, $amt, $memo) = $data;
                 str_replace('"', "", $memo);
@@ -87,7 +89,7 @@ class import_bank_transaction
                 }
 
                 if (!$error) {
-                    display_notification_centered($line.",".$date_std.",".$amt.",".$memo);
+                    $this->display_screen($line.",".$date_std.",".$amt.",".$memo);
                     $this->add_transaction($account_code,$date_std,$amt,$memo);
                     $entryCount++;
                 } else {
@@ -100,11 +102,11 @@ class import_bank_transaction
                 if ($errCnt == 0) {
                     if ($entryCount > 0) {
                         commit_transaction();
-                        display_notification_centered(_("$entryCount transactions have been imported."));
+                        $this->display_screen(_("$entryCount transactions have been imported."));
                     } else {
                         // no transactions
                         cancel_transaction();
-                        display_error(_("Import file contained no transactions."));
+                        $this->display_screen(_("Import file contained no transactions."));
                     }
                 } else {
                     // errors found, abandon load
@@ -229,6 +231,16 @@ class import_bank_transaction
         return $rc;
     }
 
+    /**
+     * @param $msg
+     * @param $center
+     * @return void
+     */
+    function display_screen($msg, $center=false)
+    {
+        $style = "style='text-align='" . ($center) ? "centre'" : "left'";
+        echo "<span $style class='text'>$msg</span><br/>\n";
+    }
 
     /**
     * date2sql

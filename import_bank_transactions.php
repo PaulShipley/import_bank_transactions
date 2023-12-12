@@ -25,6 +25,8 @@ See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
 * @license GPL
 */
 
+global $SysPrefs;
+
 $page_security = 'SA_IMPORTBANKTRANSACTIONS';
 $path_to_root  = "../..";
 include_once ($path_to_root . "/includes/session.inc");
@@ -153,7 +155,7 @@ function show_table_section_bank_account_number()
 
 function show_table_section_csv_separator()
 {
-    table_section_title(_("CSV fields - <a href='csv_file_format.html' target='_blank'>Help CSV File Format</a>"), 2);
+    table_section_title(_('CSV fields - <a href=\'csv_file_format.html\' target=\'_blank\'>Help CSV File Format</a>'), 2);
     text_cells(_("Field Separator:"), 'sep', $_POST['sep'], 2, 1, $title = "", 'colspan=1');
 }
 
