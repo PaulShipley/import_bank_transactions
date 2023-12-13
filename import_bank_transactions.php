@@ -47,6 +47,10 @@ ini_set("display_errors", "on");
 $trans_finished= FALSE;
 $ImportBankTrans = new import_bank_transaction();
 
+if (isset($_GET['DeleteTrans'])) {
+    $ImportBankTrans->drop_table();
+}
+
 if (isset($_GET['ImportTrans'])) {
     $import_id = $_GET['import_id'];
 
@@ -121,7 +125,7 @@ if (isset($_FILES['imp']) && $_FILES['imp']['name'] != '') {
         hyperlink_params($_SERVER['PHP_SELF'], _("Process Transactions"), "ImportTrans=yes&import_id=0");
     }
 
-    hyperlink_params($_SERVER['PHP_SELF'], _("Import another file"), "");
+    hyperlink_params($_SERVER['PHP_SELF'], _("Import another file"), "DeleteTrans=yes");
 
     display_footer_exit();
 }

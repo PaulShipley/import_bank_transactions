@@ -40,7 +40,7 @@ class import_bank_transaction
     */
     function __construct()
     {
-
+        return;
     }
 
     /**
@@ -136,7 +136,7 @@ class import_bank_transaction
 
         $sql = "CREATE TABLE ".TB_PREF.$this->table." (id int NOT NULL AUTO_INCREMENT, account_code varchar(15), transdate DATE, transamount DOUBLE, transmemo TINYTEXT, PRIMARY KEY(id))";
 
-        db_query($sql, "Can't create temporary table");
+        return db_query($sql, "Can't create temporary table");
     }
 
     /**
@@ -148,7 +148,7 @@ class import_bank_transaction
     {
         $sql = "DROP TABLE IF EXISTS ".TB_PREF.$this->table;
 
-        db_query($sql, "Can't drop temporary table");
+        return db_query($sql, "Can't drop temporary table");
     }
 
     /**
@@ -157,9 +157,9 @@ class import_bank_transaction
     * Add bank transaction to temporary table to be processed later
     *
     * @param integer  $account_code
-    * @param sqldate  $transdate
+    * @param string   $transdate
     * @param double   $transamount
-    * @param tinytext $transmemo
+    * @param string   $transmemo
     *
     * @return NULL
     */
@@ -171,7 +171,7 @@ class import_bank_transaction
 
         $sql  = "INSERT INTO ".TB_PREF.$this->table." (account_code, transdate , transamount, transmemo) VALUES ($acct, $date, $transamount, $memo)";
 
-        db_query($sql, "Can't create transaction row");
+        return db_query($sql, "Can't create transaction row");
     }
 
     /**
@@ -187,15 +187,13 @@ class import_bank_transaction
     {
         $sql = "DELETE FROM ".TB_PREF.$this->table." WHERE id=$import_id";
 
-        db_query($sql, "Can't delete transaction");
+        return db_query($sql, "Can't delete transaction");
     }
 
     /**
     * Get Next Transaction
     *
     * Get next transaction from temporary table
-    *
-    * @param integer $import_id  previous transaction id to be deleted, skip if 0
     *
     * @return array Contains the selected row
     */
@@ -238,7 +236,7 @@ class import_bank_transaction
      */
     function display_screen($msg, $center=false)
     {
-        $style = "style='text-align='" . ($center) ? "centre'" : "left'";
+        $style = "style='text-align:'" . ($center) ? "center'" : "left'";
         echo "<span $style class='text'>$msg</span><br/>\n";
     }
 
@@ -255,7 +253,7 @@ class import_bank_transaction
     * result as the original version
     * 
     * Calling the function with the additional parameters allows for greater flexability of
-    * date formats (ie: date2sql($date_,2,'-'))
+    * date formats (ie: date2sql($date_,2,'-')
     *
     * @param string  $date_    Date to be converted
     * @param integer $how      Date format (0=MMDDYYYY, 1=DDMMYYYY, 2=YYYYMMDD, 3=MmmDDYYYY, 4=DDMmYYYY, 5=YYYYMmmDD)
@@ -266,7 +264,7 @@ class import_bank_transaction
     function date2sql($date_, $how = NULL, $date_sep = NULL)
     {
         global $SysPrefs, $tmonths;
-        /* takes a date in a the format specified in $DefaultDateFormat
+        /* takes a date in the format specified in $DefaultDateFormat
         and converts to a yyyy/mm/dd format */
 
         //$how = user_date_format();
@@ -298,7 +296,7 @@ class import_bank_transaction
                 if ((int)$year < 60) {
                     $year = "20".$year;
                 }
-                elseif ((int)$year > 59 && (int)$year < 100) {
+                elseif ((int)$year < 100) {
                     $year = "19".$year;
                 }
             }

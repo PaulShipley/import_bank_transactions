@@ -29,9 +29,9 @@
 $path_to_root = "../..";     // *** PS ***
 include_once($path_to_root . "/includes/ui/items_cart.inc");
 include_once($path_to_root . "/includes/session.inc");
-$page_security = isset($_GET['NewPayment']) || 
-	@($_SESSION['pay_items']->trans_type==ST_BANKPAYMENT)
- ? 'SA_PAYMENT' : 'SA_DEPOSIT';
+$page_security = isset($_GET['NewPayment']) ||
+                (isset($_SESSION['pay_items']) ? ($_SESSION['pay_items']->trans_type==ST_BANKPAYMENT) : false)
+    ? 'SA_PAYMENT' : 'SA_DEPOSIT';
 
 include_once($path_to_root . "/includes/date_functions.inc");
 include_once($path_to_root . "/includes/data_checks.inc");
