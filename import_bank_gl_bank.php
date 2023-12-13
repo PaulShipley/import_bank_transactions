@@ -1,13 +1,13 @@
 <?php
 /**********************************************************************
-Copyright (C) FrontAccounting, LLC.
-Released under the terms of the GNU General Public License, GPL,
-as published by the Free Software Foundation, either version 3
-of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
+    Copyright (C) FrontAccounting, LLC.
+	Released under the terms of the GNU General Public License, GPL, 
+	as published by the Free Software Foundation, either version 3 
+	of the License, or (at your option) any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+    See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
 ***********************************************************************/
 /**
 * Import Bank Transactions module
@@ -18,7 +18,7 @@ See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
 * transaction will be shown. Both payments and deposits will be processed in date order, earlist first.
 * 
 * Note that the pre-populated data can be ammended, and the tranaction can even not be processed,
-* but this is unlikly to be what you want.
+* but this is unlikely to be what you want.
 * 
 * All of my changes have been marked with the comment // *** PS ***
 *
@@ -29,9 +29,9 @@ See the License here <http://www.gnu.org/licenses/gpl-3.0.html>.
 $path_to_root = "../..";     // *** PS ***
 include_once($path_to_root . "/includes/ui/items_cart.inc");
 include_once($path_to_root . "/includes/session.inc");
-$page_security= isset($_GET['NewPayment']) ||
-@($_SESSION['pay_items']->trans_type == ST_BANKPAYMENT)
-? 'SA_PAYMENT' : 'SA_DEPOSIT';
+$page_security = isset($_GET['NewPayment']) || 
+	@($_SESSION['pay_items']->trans_type==ST_BANKPAYMENT)
+ ? 'SA_PAYMENT' : 'SA_DEPOSIT';
 
 include_once($path_to_root . "/includes/date_functions.inc");
 include_once($path_to_root . "/includes/data_checks.inc");
@@ -43,9 +43,9 @@ include_once($path_to_root . "/admin/db/attachments_db.inc");
 
 $js = '';
 if ($SysPrefs->use_popup_windows)
-$js .= get_js_open_window(800, 500);
+	$js .= get_js_open_window(800, 500);
 if (user_use_date_picker())
-$js .= get_js_date_picker();
+	$js .= get_js_date_picker();
 
 if (isset($_GET['NewPayment'])) {
     $_SESSION['page_title'] = _($help_context = "Bank Account Payment Entry");
@@ -76,7 +76,7 @@ if (isset($_GET['NewPayment'])) {
 } else if (isset($_GET['ModifyPayment'])) {
     $_SESSION['page_title'] = _($help_context = "Modify Bank Account Entry")." #".$_GET['trans_no'];
     create_cart(ST_BANKPAYMENT, $_GET['trans_no']);
-} else if (isset($_GET['ModifyDeposit'])) {
+} else if(isset($_GET['ModifyDeposit'])) {
     $_SESSION['page_title'] = _($help_context = "Modify Bank Deposit Entry")." #".$_GET['trans_no'];
     create_cart(ST_BANKDEPOSIT, $_GET['trans_no']);
 }
@@ -86,7 +86,7 @@ page($_SESSION['page_title'], false, false, '', $js);
 check_db_has_bank_accounts(_("There are no bank accounts defined in the system."));
 
 if (isset($_GET['ModifyDeposit']) || isset($_GET['ModifyPayment']))
-check_is_editable($_SESSION['pay_items']->trans_type, $_SESSION['pay_items']->order_id);
+	check_is_editable($_SESSION['pay_items']->trans_type, $_SESSION['pay_items']->order_id);
 
 //----------------------------------------------------------------------------------------
 if (list_updated('PersonDetailID')) {
@@ -233,7 +233,7 @@ function create_cart($type, $trans_no)
                 if (is_bank_account($row['account'])) {
                     // date exchange rate is currenly not stored in bank transaction,
                     // so we have to restore it from original gl amounts
-                    $ex_rate = $bank_trans['amount'] / $row['amount'];
+					$ex_rate = $bank_trans['amount']/$row['amount'];
                 } else {
                     $cart->add_gl_item( $row['account'], $row['dimension_id'],
                         $row['dimension2_id'], $row['amount'], $row['memo_']);
@@ -242,7 +242,7 @@ function create_cart($type, $trans_no)
         }
 
         // apply exchange rate
-        foreach ($cart->gl_items as $line_no => $line)
+		foreach($cart->gl_items as $line_no => $line)
         $cart->gl_items[$line_no]->amount *= $ex_rate;
 
     } else {
@@ -256,7 +256,7 @@ function create_cart($type, $trans_no)
     $_POST['ref'] = $cart->reference;
     $_POST['date_'] = $cart->tran_date;
 
-    $_SESSION['pay_items'] = & $cart;
+	$_SESSION['pay_items'] = &$cart;
 }
 //-----------------------------------------------------------------------------------------------
 
@@ -280,11 +280,11 @@ function check_trans()
 
     $limit    = get_bank_account_limit($_POST['bank_account'], $_POST['date_']);
 
-    $amnt_chg = - $_SESSION['pay_items']->gl_items_total() - $_SESSION['pay_items']->original_amount;
+	$amnt_chg = -$_SESSION['pay_items']->gl_items_total()-$_SESSION['pay_items']->original_amount;
 
-    if ($limit !== null && floatcmp($limit, - $amnt_chg) < 0) 
+	if ($limit !== null && floatcmp($limit, -$amnt_chg) < 0)
     {
-        display_error(sprintf(_("The total bank amount exceeds allowed limit (%s)."), price_format($limit - $_SESSION['pay_items']->original_amount)));
+		display_error(sprintf(_("The total bank amount exceeds allowed limit (%s)."), price_format($limit-$_SESSION['pay_items']->original_amount)));
         set_focus('code_id');
         $input_error = 1;
     }
@@ -315,11 +315,11 @@ function check_trans()
         $input_error = 1;
     }
 
-    if (get_post('PayType') == PT_CUSTOMER && (!get_post('person_id') || !get_post('PersonDetailID'))) {
+	if (get_post('PayType')==PT_CUSTOMER && (!get_post('person_id') || !get_post('PersonDetailID'))) {
         display_error(_("You have to select customer and customer branch."));
         set_focus('person_id');
         $input_error = 1;
-    } elseif (get_post('PayType') == PT_SUPPLIER && (!get_post('person_id'))) {
+	} elseif (get_post('PayType')==PT_SUPPLIER && (!get_post('person_id'))) {
         display_error(_("You have to select supplier."));
         set_focus('person_id');
         $input_error = 1;
@@ -339,7 +339,7 @@ if (isset($_POST['Process']) && !check_trans())
 {
     begin_transaction();
 
-    $_SESSION['pay_items'] = & $_SESSION['pay_items'];
+	$_SESSION['pay_items'] = &$_SESSION['pay_items'];
     $new   = $_SESSION['pay_items']->order_id == 0;
 
     add_new_exchange_rate(get_bank_account_currency(get_post('bank_account')), get_post('date_'), input_num('_ex_rate'));
@@ -399,8 +399,8 @@ function check_item_data()
 
 function handle_update_item()
 {
-    $amount = ($_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ? 1: - 1) * input_num('amount');
-    if ($_POST['UpdateItem'] != "" && check_item_data()) 
+	$amount = ($_SESSION['pay_items']->trans_type==ST_BANKPAYMENT ? 1:-1) * input_num('amount');
+    if($_POST['UpdateItem'] != "" && check_item_data())
     {
         $_SESSION['pay_items']->update_gl_item($_POST['Index'], $_POST['code_id'],
             $_POST['dimension_id'], $_POST['dimension2_id'], $amount , $_POST['LineMemo']);
@@ -422,7 +422,7 @@ function handle_new_item()
 {
     if (!check_item_data())
     return;
-    $amount = ($_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ? 1: - 1) * input_num('amount');
+	$amount = ($_SESSION['pay_items']->trans_type==ST_BANKPAYMENT ? 1:-1) * input_num('amount');
 
     $_SESSION['pay_items']->add_gl_item($_POST['code_id'], $_POST['dimension_id'],
         $_POST['dimension2_id'], $amount, $_POST['LineMemo']);
@@ -430,22 +430,22 @@ function handle_new_item()
 }
 //-----------------------------------------------------------------------------------------------
 $id = find_submit('Delete');
-if ($id != - 1)
-handle_delete_item($id);
+if ($id != -1)
+	handle_delete_item($id);
 
 if (isset($_POST['AddItem']))
-handle_new_item();
+	handle_new_item();
 
 if (isset($_POST['UpdateItem']))
-handle_update_item();
+	handle_update_item();
 
 if (isset($_POST['CancelItemChanges']) || isset($_POST['Index']))
-line_start_focus();
+	line_start_focus();
 
 if (isset($_POST['go'])) 
 {
     display_quick_entries($_SESSION['pay_items'], $_POST['person_id'], input_num('totamount'),
-        $_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ? QE_PAYMENT : QE_DEPOSIT);
+		$_SESSION['pay_items']->trans_type==ST_BANKPAYMENT ? QE_PAYMENT : QE_DEPOSIT);
     $_POST['totamount'] = price_format(0); $Ajax->activate('totamount');
     line_start_focus();
 }
@@ -458,7 +458,7 @@ display_bank_header($_SESSION['pay_items']);
 start_table(TABLESTYLE2, "width='90%'", 10);
 start_row();
 echo "<td>";
-display_gl_items($_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ?
+display_gl_items($_SESSION['pay_items']->trans_type==ST_BANKPAYMENT ?
     _("Payment Items"):_("Deposit Items"), $_SESSION['pay_items']);
 gl_options_controls($_SESSION['pay_items']);
 echo "</td>";
@@ -467,7 +467,7 @@ end_table(1);
 hidden("import_id"); // *** PS ***
 
 submit_center_first('Update', _("Update"), '', null);
-submit_center_last('Process', $_SESSION['pay_items']->trans_type == ST_BANKPAYMENT ?
+submit_center_last('Process', $_SESSION['pay_items']->trans_type==ST_BANKPAYMENT ?
     _("Process Payment"):_("Process Deposit"), '', 'default');
 
 end_form();
